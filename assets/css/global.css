@@ -1,0 +1,23 @@
+@font-face {
+  font-family: 'Ailerons';
+  src: url('~assets/fonts/Ailerons.otf') format('otf'),
+    url('~assets/fonts/Ailerons.woff2') format('woff2'),
+    url('~assets/fonts/Ailerons.woff') format('woff');
+}
+
+:root {
+  --highlight: rgb(31, 50, 71); 
+  --background: rgb(243, 244, 246); 
+  --background-transp: rgba(243, 244, 246, 0.8); 
+  --text: black;
+  --link:rgb(0, 113, 241);
+
+  /* --highlight: rgb(235, 235, 235);
+  --background: rgb(29, 31, 34);
+  --text: rgb(235, 235, 235);
+  --link: rgb(102, 167, 241); */
+}
+
+body {
+  background: var(--background);
+}
