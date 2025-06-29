@@ -39,7 +39,13 @@ export default {
       { property: 'og:image', content: '/opengraph.jpg' },
       { name: 'format-detection', content: 'telephone=no' }
     ],
-    link: [{ rel: 'icon', type: 'image/png', href: '/favicon/favicon-32.png' }]
+    link: [
+      { rel: 'icon', type: 'image/png', href: '/favicon/favicon-32.png' },
+      { rel: 'preload', as: 'font', type: 'font/woff2', href: '/fonts/Ailerons.woff2', crossorigin: "anonymous" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous"},
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Roboto:wght@100;900&display=swap"}
+    ]
   },
 
   // Global CSS: https://go.nuxtjs.dev/config-css
@@ -52,7 +58,9 @@ export default {
   ],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [],
+  plugins: [
+    '@/plugins/gsap-scrolltrigger.ts',
+  ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -67,5 +75,5 @@ export default {
   modules: [],
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
-  build: {}
+  build: {},
 }

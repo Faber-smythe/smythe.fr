@@ -19,6 +19,7 @@ import { Position2 } from '@/utils/miscellaneous'
 export default class Scene extends Mixins(UtilMixins) {
   @Prop({ type: Number, required: true }) readonly progress!: number
   @Prop({ type: Object, required: true }) readonly cursor!: Position2
+  @Prop({ type: Boolean, required: true }) readonly pageLoaded!: boolean
 
   ready = false
   offset = 0.15
@@ -34,10 +35,6 @@ export default class Scene extends Mixins(UtilMixins) {
   leg2!: BABYLON.AbstractMesh
 
   async mounted() {
-    this.initScene()
-    await this.loadCompass()
-    this.ready = true
-
     if (this.isMobile || this.isSmartPhone) {
       this.offset = -0.2
     }
@@ -45,9 +42,15 @@ export default class Scene extends Mixins(UtilMixins) {
       this.offset = 0
     }
 
+    this.initScene()
+    await this.loadCompass()
+
+    this.$emit('compass-loaded')
     this.progressWatcher()
     this.swayWatcher()
     this.setIdle()
+
+    this.ready = true
 
     // this.scene.debugLayer.show()
 
@@ -56,112 +59,16 @@ export default class Scene extends Mixins(UtilMixins) {
     })
   }
 
-  @Watch('progress')
-  progressWatcher() {
-    if (this.ready) {
-      if (!(this.isMobile || this.isSmartPhone)) {
-        // initial leg spread
-        this.leg1.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
-          0,
-          Math.PI / 12,
-          0
-        )
-        this.leg2.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
-          0,
-          -Math.PI / 12,
-          0
-        )
-        // spin progressive
-        gsap.to(this.head.rotation, {
-          x: 0,
-          y: 0,
-          z: Math.PI * 3 * this.progress,
-          duration: 0.5
-        })
-      } else {
-        // progressive leg spread
-        this.leg1.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
-          0,
-          (Math.PI / 2) * this.progress * 2,
-          0
-        )
-        this.leg2.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
-          0,
-          -(Math.PI / 2) * this.progress * 2,
-          0
-        )
-        // progressive upwards
-        const retreat = this.isLandscape ? 0.5 : 2.5
-        gsap.to(this.head.position, {
-          z: -retreat * this.progress,
-          duration: 0.5
-        })
-      }
-    }
-  }
-
-  @Watch('cursor')
-  swayWatcher() {
-    if (this.ready) {
-      const root = this.scene.getMeshByName('__root__')!
-      this.nextRootPosition.x = this.nextRootPosition.x - 0.02 * this.cursor.y
-      this.nextRootPosition.z =
-        this.nextRootPosition.z + this.offset - 0.02 * this.cursor.x
-      // gsap.to(root.position, {
-      //   x: this.nextRootPosition.x,
-      //   z: this.nextRootPosition.z,
-      //   duration: 0.5
-      // })
-      gsap.to(root.rotation, {
-        x: -(Math.PI / 6) * this.cursor.x,
-        y: Math.PI,
-        z: (Math.PI / 6) * this.cursor.y,
-        duration: 0.5
-      })
-    }
-  }
-
-  setIdle() {
-    let swap = 0
-    const root = this.scene.getMeshByName('__root__')!
-    setInterval(() => {
-      this.nextRootPosition.x =
-        ((Math.random() - 0.5) / 6) *
-        (this.isMobile || this.isSmartPhone ? 0 : 1)
-      this.nextRootPosition.y = (Math.random() - 0.5) / 6
-      this.nextRootPosition.z = this.offset + (Math.random() - 0.5) / 6
-
-      gsap.to(root.position, {
-        duration: 2.5,
-        x: this.nextRootPosition.x,
-        y: this.nextRootPosition.y,
-        z: this.nextRootPosition.z,
-        ease: Power1.easeInOut
-      })
-    }, 2500)
-    if (this.isMobile || this.isSmartPhone) {
-      setInterval(() => {
-        swap += Math.random() < 0.5 ? Math.PI : -Math.PI
-        gsap.to(this.head.rotation, {
-          duration: 1,
-          x: 0,
-          y: 0,
-          z: swap,
-          ease: Power1.easeInOut
-        })
-      }, 3500)
-    }
-  }
-
   initScene() {
     this.canvas = this.$refs.renderCanvas as HTMLCanvasElement
     this.engine = new BABYLON.Engine(this.canvas)
     this.engine.setHardwareScalingLevel(1 / window.devicePixelRatio)
+    this.engine.displayLoadingUI()
     this.scene = new BABYLON.Scene(this.engine)
     this.scene.clearColor = new BABYLON.Color4(0, 0, 0, 0)
     this.camera = new BABYLON.ArcRotateCamera(
       'camera',
-      0,
+      Math.PI,
       0,
       2,
       new BABYLON.Vector3(0, 0, 0),
@@ -227,6 +134,105 @@ export default class Scene extends Mixins(UtilMixins) {
       }
       mesh.material = pbr
     })
+    return imported
+  }
+
+  @Watch('pageLoaded')
+  hideLoadingUI() {
+    // console.log('hide loading UI, page is loaded (compass and img)')
+    this.engine.hideLoadingUI()
+  }
+
+  @Watch('progress')
+  progressWatcher() {
+    if (this.ready) {
+      if (!(this.isMobile || this.isSmartPhone)) {
+        // initial leg spread
+        this.leg1.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
+          0,
+          Math.PI / 12,
+          0
+        )
+        this.leg2.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
+          0,
+          -Math.PI / 12,
+          0
+        )
+        // spin progressive
+        gsap.to(this.head.rotation, {
+          x: 0,
+          y: 0,
+          z: Math.PI * 3 * this.progress,
+          duration: 0.5,
+        })
+      } else {
+        // progressive leg spread
+        this.leg1.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
+          0,
+          (Math.PI / 2) * this.progress * 2,
+          0
+        )
+        this.leg2.rotationQuaternion = BABYLON.Quaternion.FromEulerAngles(
+          0,
+          -(Math.PI / 2) * this.progress * 2,
+          0
+        )
+        // progressive upwards
+        const retreat = this.isLandscape ? 0.5 : 2.5
+        gsap.to(this.head.position, {
+          z: -retreat * this.progress,
+          duration: 0.5,
+        })
+      }
+    }
+  }
+
+  @Watch('cursor')
+  swayWatcher() {
+    if (this.ready) {
+      const root = this.scene.getMeshByName('__root__')!
+      this.nextRootPosition.x = this.nextRootPosition.x - 0.02 * this.cursor.y
+      this.nextRootPosition.z =
+        this.nextRootPosition.z + this.offset - 0.02 * this.cursor.x
+      gsap.to(root.rotation, {
+        x: (Math.PI / 6) * this.cursor.x,
+        y: Math.PI,
+        z: (Math.PI / 6) * this.cursor.y,
+        duration: 0.5,
+      })
+    }
+  }
+
+  setIdle() {
+    let swap = 0
+    const root = this.scene.getMeshByName('__root__')!
+    setInterval(() => {
+      this.nextRootPosition.x =
+        ((Math.random() - 0.5) / 6) *
+        (this.isMobile || this.isSmartPhone ? 0 : 1)
+      this.nextRootPosition.y = (Math.random() - 0.5) / 6
+      this.nextRootPosition.z = this.offset + (Math.random() - 0.5) / 6
+
+      gsap.to(root.position, {
+        duration: 2.5,
+        x: this.nextRootPosition.x,
+        y: this.nextRootPosition.y,
+        z: this.nextRootPosition.z,
+        ease: Power1.easeInOut,
+      })
+    }, 2500)
+    if (this.isMobile || this.isSmartPhone) {
+      setInterval(() => {
+        swap += Math.random() < 0.5 ? Math.PI : -Math.PI
+        gsap.to(this.head.rotation, {
+          duration: 1,
+          x: 0,
+          y: 0,
+          z: swap,
+          ease: Power1.easeInOut,
+        })
+      }, 3500)
+    }
   }
 }
 </script>
@@ -234,20 +240,22 @@ export default class Scene extends Mixins(UtilMixins) {
 <style scoped>
 #canvasHolder {
   position: absolute;
-  z-index: 0;
+  z-index: -1;
   height: 100%;
   width: 100%;
-  left: -42vw;
+  overflow: hidden;
+  pointer-events: none;
 }
 canvas {
   position: absolute;
   height: 100%;
   width: 100%;
+  right: -42vw;
 }
 
 @media screen and (max-width: 1024px) {
-  #canvasHolder {
-    left: 0vw;
+  canvas {
+    right: 0vw;
   }
 }
 @media screen and (max-width: 1024px) and (orientation: portrait) {

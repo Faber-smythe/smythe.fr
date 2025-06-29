@@ -13,6 +13,9 @@
       </div>
     </div>
     <div class="desc">
+      <div :v-if="project.badges.length > 0" id="badgeHolder">
+        <BadgePin v-for="badge in project.badges" :badge="badge"></BadgePin>
+      </div>
       <p class="cardName">{{ project.title }}</p>
       <p v-html="project.desc"></p>
       <p class="previewLink">
@@ -27,30 +30,55 @@
 import { Mixins, Prop, Component } from 'vue-property-decorator'
 // components
 import { UtilMixins } from '@/utils/mixin'
+import BadgePin from '@/components/BadgePin.vue'
 // types
 import Project from '@/utils/project'
+import Badge from '@/utils/badge'
 
 @Component
 export default class Card extends Mixins(UtilMixins) {
   @Prop({ type: Object, required: true }) readonly project!: Project
+
   imagePath = require(`@/assets/img/${this.project.image}`)
+
+  created() {
+    console.log(this.project)
+    console.log(this.project.badges)
+    // try loading the required image already, in order to warn the index when ready
+    const _img = new Image()
+    _img.src = this.imagePath
+    _img.addEventListener('load', () => {
+      this.$emit('img-load')
+    })
+  }
 }
 </script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;900&display=swap');
 
+#badgeHolder {
+
+  top: 10px;
+  left: 0px;
+  max-width: max-content;
+  display: flex;
+  flex-wrap: wrap;
+}
 .card {
   position: relative;
   z-index: 0;
   width: 50vw;
-  height: 25vw;
+  height: 50vh;
   display: flex;
   justify-content: center;
   align-items: center;
   margin: -1px;
+  pointer-events: all;
 }
-
+.card:first-of-type {
+  margin-top: 50vh;
+}
 .card,
 .card .imgHolder,
 .card .img,
@@ -93,8 +121,9 @@ export default class Card extends Mixins(UtilMixins) {
 .card h2 {
   font-family: 'Roboto', sans-serif;
   color: white;
-  font-size: 2.5em;
   z-index: 2;
+  font-size: 2.5em;
+  font-weight: 100;
 }
 
 .card .filter {
@@ -108,19 +137,20 @@ export default class Card extends Mixins(UtilMixins) {
 .card .desc {
   position: absolute;
   z-index: -1;
-  left: -20px;
+  right: -20px;
   height: 40%;
-  width: 25vw;
-  padding: 0px 20px;
-  border-left: 40px solid transparent;
-  border-color: var(--highlight);
+  width: 35vw;
+  padding: 10px 20px;
+  border-right: 40px solid transparent;
+  border-color: var(--highlight-transp);
   background: var(--background-transp);
   font-family: 'Roboto', sans-serif;
   font-size: 1.2em;
+  font-weight: 100;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: flex-end;
+  /* justify-content: center; */
+  /* align-items: flex-end; */
   overflow: hidden;
 }
 
@@ -135,12 +165,17 @@ export default class Card extends Mixins(UtilMixins) {
   cursor: pointer;
 }
 .card .desc p {
-  text-align: right;
   margin: 5px 0px;
   color: var(--text);
 }
 .card .previewLink {
   font-weight: 900;
+}
+.card .desc a {
+  transition: all 0.3s ease;
+}
+.card .desc a:hover {
+  opacity: 0.5;
 }
 
 .card:hover h2 {
@@ -154,10 +189,15 @@ export default class Card extends Mixins(UtilMixins) {
   transform: scale(1.1);
 }
 .card:hover .desc {
-  left: -25vw;
+  right: -35vw;
   height: 100%;
 }
 
+@media screen and (max-width: 1440px) {
+  .card .desc {
+    font-size: 1em;
+  }
+}
 @media screen and (max-width: 1024px) {
   .card {
     width: 100%;
@@ -172,7 +212,7 @@ export default class Card extends Mixins(UtilMixins) {
 
   .card .cardName {
     text-transform: uppercase;
-    font-size: 1em;
+    font-size: 1.1em;
     margin: 5px;
   }
 
@@ -186,11 +226,14 @@ export default class Card extends Mixins(UtilMixins) {
     border: none;
     background: rgba(255, 255, 255, 1);
     font-family: 'Roboto', sans-serif;
-    font-size: 0.8em;
+    font-size: 0.7em;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: flex-end;
+  }
+  .card .desc p {
+    text-align: right;
   }
   .card:hover {
     width: 50vw;
@@ -198,8 +241,10 @@ export default class Card extends Mixins(UtilMixins) {
   }
   .card:hover .desc {
     left: -50vw;
-    padding: 5px;
     border: none;
+  }
+  .card .desc a:hover {
+    opacity: 1;
   }
 }
 
